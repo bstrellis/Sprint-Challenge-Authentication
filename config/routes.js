@@ -1,4 +1,7 @@
 const axios = require('axios');
+const bcryptjs = require('bcryptjs');
+const knex = require('knex');
+const knexConfig = require('../knexfile');
 
 const { authenticate } = require('./middlewares');
 
@@ -8,8 +11,23 @@ module.exports = server => {
   server.get('/api/jokes', authenticate, getJokes);
 };
 
-function register(req, res) {
-  // implement user registration
+const db = knex(knexConfig.development);
+
+// create token
+
+const register = async (req, res) => {
+  const userCreds = req.body;
+  const hash = bcryptjs.hashSync(userCreds.password, 2); // should be >13 in production
+  userCreds.password = hash;
+  
+  try {
+    const returned = await db('users').insert(userCreds);
+    res.status(200).json(returned);
+  } catch(err) {
+    console.log(err);
+    res.status(500).json(err);
+  }
+
 }
 
 function login(req, res) {
