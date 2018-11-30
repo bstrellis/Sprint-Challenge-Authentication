@@ -3,6 +3,7 @@ const bcryptjs = require('bcryptjs');
 const knex = require('knex');
 const knexConfig = require('../knexfile');
 const key = require('../_secrets/keys');
+const jwt = require('jsonwebtoken');
 
 const { authenticate } = require('./middlewares');
 
@@ -55,6 +56,7 @@ const login = async (req, res) => {
       res.status(401).json({ message: 'Username or password incorrect.'})
     }
   } catch(err) {
+    console.log(err);
     res.status(500).json(err);
   }
 }
@@ -62,7 +64,7 @@ const login = async (req, res) => {
 function getJokes(req, res) {
   axios
     .get(
-      'https://08ad1pao69.execute-api.us-east-1.amazonaws.com/dev/random_ten'
+      'https://safe-falls-22549.herokuapp.com/random_ten'
     )
     .then(response => {
       res.status(200).json(response.data);
