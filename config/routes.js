@@ -2,6 +2,7 @@ const axios = require('axios');
 const bcryptjs = require('bcryptjs');
 const knex = require('knex');
 const knexConfig = require('../knexfile');
+const key = require('../_secrets/keys');
 
 const { authenticate } = require('./middlewares');
 
@@ -13,7 +14,20 @@ module.exports = server => {
 
 const db = knex(knexConfig.development);
 
-// create token
+const generateToken = user => {
+  const payload = {
+    subject: user.id,
+    username: user.username
+  };
+
+  const secret = key.jwtKey; // nice work
+
+  const options = {
+    expiresIn: '1h'
+  };
+
+  return jwt.sign(payload, secret, options);
+}
 
 const register = async (req, res) => {
   const userCreds = req.body;
@@ -21,8 +35,8 @@ const register = async (req, res) => {
   userCreds.password = hash;
   
   try {
-    const returned = await db('users').insert(userCreds);
-    res.status(200).json(returned);
+    const insertCount = await db('users').insert(userCreds);
+    res.status(200).json(insertCount);
   } catch(err) {
     console.log(err);
     res.status(500).json(err);
@@ -30,8 +44,19 @@ const register = async (req, res) => {
 
 }
 
-function login(req, res) {
-  // implement user login
+const login = async (req, res) => {
+  const userCreds = req.body;
+  try {
+    const user = await db('users').where({ username: userCreds.username }).first();
+    if (user && bcryptjs.compareSync(userCreds.password, user.password)) {
+      const token = generateToken(user);
+      res.status(200).json({ message: 'Welcome!', token });
+    } else {
+      res.status(401).json({ message: 'Username or password incorrect.'})
+    }
+  } catch(err) {
+    res.status(500).json(err);
+  }
 }
 
 function getJokes(req, res) {
